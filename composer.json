@@ -1,0 +1,35 @@
+{
+    "name": "best-it/commercetools-message-serializer",
+    "type": "library",
+    "license": "MIT",
+    "description": "Serializer for CommerceTools messages",
+    "keywords": [],
+    "homepage": "https://bestit-online.de",
+    "authors": [
+        {
+            "name": "Michel Chowanski",
+            "email": "michel.chowanski@bestit-online.de"
+        }
+    ],
+    "require": {
+        "php": "^7.1.3",
+        "symfony/messenger": "^4.2",
+        "commercetools/php-sdk": "^1.0 || ^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.0 || ^7.0",
+        "best-it/php_codesniffer": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "BestIt\\Messenger\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "BestIt\\Messenger\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable" : true
+}
