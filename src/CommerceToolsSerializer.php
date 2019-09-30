@@ -29,10 +29,10 @@ class CommerceToolsSerializer implements SerializerInterface
         $class = $encodedEnvelope['headers']['X-CommerceTools-Message'] ?? false;
 
         $message = null;
-        if ($class && is_a($class, Message::class, true)) {
-            $message = Message::fromArray(json_decode($encodedEnvelope['body'], true));
-        } else {
+        if ($class && !is_a($class, Message::class, true)) {
             $message = new $class(json_decode($encodedEnvelope['body'], true));
+        } else {
+            $message = Message::fromArray(json_decode($encodedEnvelope['body'], true));
         }
 
         return new Envelope($message);
