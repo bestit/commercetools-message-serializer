@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace BestIt\Messenger\Tests;
 
+use BestIt\Messenger\Exception\DecodeException;
 use BestIt\Messenger\CommerceToolsSerializer;
 use BestIt\Messenger\Model\CustomObjectCreated;
 use Commercetools\Core\Model\Message\OrderCreatedMessage;
+use Commercetools\Core\Model\Subscription\ResourceCreatedDelivery;
+use Commercetools\Core\Model\Subscription\ResourceDeletedDelivery;
+use Commercetools\Core\Model\Subscription\ResourceUpdatedDelivery;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Envelope;
 
@@ -19,6 +23,93 @@ use Symfony\Component\Messenger\Envelope;
 class CommerceToolsSerializerTest extends TestCase
 {
     /**
+     * Test decode a CommerceTools created delivery
+     *
+     * @return void
+     */
+    public function testDecodeDeliveryCreated(): void
+    {
+        $serializer = new CommerceToolsSerializer();
+
+        $encodedEnvelope = [
+            'body' => json_encode(new ResourceCreatedDelivery([
+                'notificationType' => 'ResourceCreated',
+                'resource' => [
+                    'id' => 'foo'
+                ]
+            ]))
+        ];
+
+        $envelope = $serializer->decode($encodedEnvelope);
+        static::assertInstanceOf(ResourceCreatedDelivery::class, $envelope->getMessage());
+        static::assertEquals('foo', $envelope->getMessage()->getResource()->getId());
+    }
+
+    /**
+     * Test decode a CommerceTools deleted delivery
+     *
+     * @return void
+     */
+    public function testDecodeDeliveryDeleted(): void
+    {
+        $serializer = new CommerceToolsSerializer();
+
+        $encodedEnvelope = [
+            'body' => json_encode(new ResourceDeletedDelivery([
+                'notificationType' => 'ResourceDeleted',
+                'resource' => [
+                    'id' => 'foo'
+                ]
+            ]))
+        ];
+
+        $envelope = $serializer->decode($encodedEnvelope);
+        static::assertInstanceOf(ResourceDeletedDelivery::class, $envelope->getMessage());
+        static::assertEquals('foo', $envelope->getMessage()->getResource()->getId());
+    }
+
+    /**
+     * Test decode a CommerceTools updated delivery
+     *
+     * @return void
+     */
+    public function testDecodeDeliveryUpdated(): void
+    {
+        $serializer = new CommerceToolsSerializer();
+
+        $encodedEnvelope = [
+            'body' => json_encode(new ResourceUpdatedDelivery([
+                'notificationType' => 'ResourceUpdated',
+                'resource' => [
+                    'id' => 'foo'
+                ]
+            ]))
+        ];
+
+        $envelope = $serializer->decode($encodedEnvelope);
+        static::assertInstanceOf(ResourceUpdatedDelivery::class, $envelope->getMessage());
+        static::assertEquals('foo', $envelope->getMessage()->getResource()->getId());
+    }
+
+    /**
+     * Test decode method throws exception
+     *
+     * @return void
+     */
+    public function testDecodeException(): void
+    {
+        $this->expectException(DecodeException::class);
+
+        $serializer = new CommerceToolsSerializer();
+
+        $encodedEnvelope = [
+            'body' => json_encode(new ResourceUpdatedDelivery())
+        ];
+
+        $serializer->decode($encodedEnvelope);
+    }
+
+    /**
      * Test decode a CommerceTools message
      *
      * @return void
@@ -28,10 +119,7 @@ class CommerceToolsSerializerTest extends TestCase
         $serializer = new CommerceToolsSerializer();
 
         $encodedEnvelope = [
-            'headers' => [
-                'X-CommerceTools-Message' => OrderCreatedMessage::class
-            ],
-            'body' => json_encode(new OrderCreatedMessage(['id' => 'foo']))
+            'body' => json_encode(new OrderCreatedMessage(['notificationType' => 'Message', 'id' => 'foo']))
         ];
 
         $envelope = $serializer->decode($encodedEnvelope);
