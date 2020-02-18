@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace BestIt\Messenger;
 
+use BestIt\Messenger\Exception\DecodeException;
 use Commercetools\Core\Model\Common\Resource;
 use Commercetools\Core\Model\Message\Message;
+use Commercetools\Core\Model\Subscription\Delivery;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 
@@ -27,12 +29,18 @@ class CommerceToolsSerializer implements SerializerInterface
     public function decode(array $encodedEnvelope): Envelope
     {
         $class = $encodedEnvelope['headers']['X-CommerceTools-Message'] ?? false;
+        $body = json_decode($encodedEnvelope['body'], true);
+        $type = $body['notificationType'] ?? false;
 
         $message = null;
-        if ($class && !is_a($class, Message::class, true)) {
-            $message = new $class(json_decode($encodedEnvelope['body'], true));
+        if ($class) {
+            $message = new $class($body);
+        } else if($type === 'Message') {
+            $message = Message::fromArray($body);
+        } else if(in_array($type, ['ResourceCreated', 'ResourceUpdated', 'ResourceDeleted'])) {
+            $message = Delivery::fromArray($body);
         } else {
-            $message = Message::fromArray(json_decode($encodedEnvelope['body'], true));
+            throw new DecodeException(sprintf('Unable to decode unknown type `%s`.', $type));
         }
 
         return new Envelope($message);
