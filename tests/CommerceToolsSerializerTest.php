@@ -6,7 +6,10 @@ namespace BestIt\Messenger\Tests;
 
 use BestIt\Messenger\Exception\DecodeException;
 use BestIt\Messenger\CommerceToolsSerializer;
+use BestIt\Messenger\Model\CategoryUpdated;
+use BestIt\Messenger\Model\CustomerDeleted;
 use BestIt\Messenger\Model\CustomObjectCreated;
+use BestIt\Messenger\Model\ProductCreated;
 use Commercetools\Core\Model\Message\OrderCreatedMessage;
 use Commercetools\Core\Model\Subscription\ResourceCreatedDelivery;
 use Commercetools\Core\Model\Subscription\ResourceDeletedDelivery;
@@ -35,13 +38,14 @@ class CommerceToolsSerializerTest extends TestCase
             'body' => json_encode(new ResourceCreatedDelivery([
                 'notificationType' => 'ResourceCreated',
                 'resource' => [
+                    'typeId' => 'product',
                     'id' => 'foo'
                 ]
             ]))
         ];
 
         $envelope = $serializer->decode($encodedEnvelope);
-        static::assertInstanceOf(ResourceCreatedDelivery::class, $envelope->getMessage());
+        static::assertInstanceOf(ProductCreated::class, $envelope->getMessage());
         static::assertEquals('foo', $envelope->getMessage()->getResource()->getId());
     }
 
@@ -58,13 +62,14 @@ class CommerceToolsSerializerTest extends TestCase
             'body' => json_encode(new ResourceDeletedDelivery([
                 'notificationType' => 'ResourceDeleted',
                 'resource' => [
+                    'typeId' => 'customer',
                     'id' => 'foo'
                 ]
             ]))
         ];
 
         $envelope = $serializer->decode($encodedEnvelope);
-        static::assertInstanceOf(ResourceDeletedDelivery::class, $envelope->getMessage());
+        static::assertInstanceOf(CustomerDeleted::class, $envelope->getMessage());
         static::assertEquals('foo', $envelope->getMessage()->getResource()->getId());
     }
 
@@ -81,13 +86,14 @@ class CommerceToolsSerializerTest extends TestCase
             'body' => json_encode(new ResourceUpdatedDelivery([
                 'notificationType' => 'ResourceUpdated',
                 'resource' => [
+                    'typeId' => 'category',
                     'id' => 'foo'
                 ]
             ]))
         ];
 
         $envelope = $serializer->decode($encodedEnvelope);
-        static::assertInstanceOf(ResourceUpdatedDelivery::class, $envelope->getMessage());
+        static::assertInstanceOf(CategoryUpdated::class, $envelope->getMessage());
         static::assertEquals('foo', $envelope->getMessage()->getResource()->getId());
     }
 
