@@ -16,6 +16,7 @@ use Commercetools\Core\Model\Subscription\ResourceDeletedDelivery;
 use Commercetools\Core\Model\Subscription\ResourceUpdatedDelivery;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Stamp\RedeliveryStamp;
 
 /**
  * Test message serializer
@@ -35,6 +36,7 @@ class CommerceToolsSerializerTest extends TestCase
         $serializer = new CommerceToolsSerializer();
 
         $encodedEnvelope = [
+            'headers' => [],
             'body' => json_encode(new ResourceCreatedDelivery([
                 'notificationType' => 'ResourceCreated',
                 'resource' => [
@@ -50,6 +52,36 @@ class CommerceToolsSerializerTest extends TestCase
     }
 
     /**
+     * Test decode a CommerceTools message with stamps
+     *
+     * @return void
+     */
+    public function testDecodeWithStamps(): void
+    {
+        $serializer = new CommerceToolsSerializer();
+
+        $stampSerialize = serialize([$stamp = new RedeliveryStamp(2, 'foo')]);
+
+        $encodedEnvelope = [
+            'headers' => [
+                'X-Message-Stamp-Symfony\Component\Messenger\Stamp\RedeliveryStamp' => $stampSerialize
+            ],
+            'body' => json_encode(new ResourceCreatedDelivery([
+                'notificationType' => 'ResourceCreated',
+                'resource' => [
+                    'typeId' => 'product',
+                    'id' => 'foo'
+                ]
+            ]))
+        ];
+
+        $envelope = $serializer->decode($encodedEnvelope);
+        static::assertInstanceOf(ProductCreated::class, $envelope->getMessage());
+        static::assertEquals('foo', $envelope->getMessage()->getResource()->getId());
+        static::assertEquals($stamp, $envelope->last(RedeliveryStamp::class));
+    }
+
+    /**
      * Test decode a CommerceTools deleted delivery
      *
      * @return void
@@ -59,6 +91,7 @@ class CommerceToolsSerializerTest extends TestCase
         $serializer = new CommerceToolsSerializer();
 
         $encodedEnvelope = [
+            'headers' => [],
             'body' => json_encode(new ResourceDeletedDelivery([
                 'notificationType' => 'ResourceDeleted',
                 'resource' => [
@@ -83,6 +116,7 @@ class CommerceToolsSerializerTest extends TestCase
         $serializer = new CommerceToolsSerializer();
 
         $encodedEnvelope = [
+            'headers' => [],
             'body' => json_encode(new ResourceUpdatedDelivery([
                 'notificationType' => 'ResourceUpdated',
                 'resource' => [
@@ -109,6 +143,7 @@ class CommerceToolsSerializerTest extends TestCase
         $serializer = new CommerceToolsSerializer();
 
         $encodedEnvelope = [
+            'headers' => [],
             'body' => json_encode(new ResourceUpdatedDelivery())
         ];
 
@@ -125,6 +160,7 @@ class CommerceToolsSerializerTest extends TestCase
         $serializer = new CommerceToolsSerializer();
 
         $encodedEnvelope = [
+            'headers' => [],
             'body' => json_encode(new OrderCreatedMessage(['notificationType' => 'Message', 'id' => 'foo']))
         ];
 
@@ -192,6 +228,30 @@ class CommerceToolsSerializerTest extends TestCase
 
         static::assertEquals([
             'X-CommerceTools-Message' => CustomObjectCreated::class
+        ], $encodedEnvelope['headers']);
+        static::assertEquals(json_encode($customObject), $encodedEnvelope['body']);
+    }
+
+    /**
+     * Test encode a with stamps
+     *
+     * @return void
+     */
+    public function testEncodeWithStamps(): void
+    {
+        $serializer = new CommerceToolsSerializer();
+
+        $customObject = new CustomObjectCreated();
+        $customObject->setId('FOOBAR');
+
+        $envelope = new Envelope($customObject, [$stamp = new RedeliveryStamp(3, 'bar')]);
+        $encodedEnvelope = $serializer->encode($envelope);
+
+        static::assertEquals([
+            'X-CommerceTools-Message' => CustomObjectCreated::class,
+            'X-Message-Stamp-Symfony\Component\Messenger\Stamp\RedeliveryStamp' => serialize([
+                $stamp
+            ])
         ], $encodedEnvelope['headers']);
         static::assertEquals(json_encode($customObject), $encodedEnvelope['body']);
     }
