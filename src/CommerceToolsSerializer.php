@@ -18,6 +18,7 @@ use Commercetools\Core\Model\Common\Resource;
 use Commercetools\Core\Model\Message\Message;
 use Commercetools\Core\Model\Subscription\Delivery;
 use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Stamp\NonSendableStampInterface;
 use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 
 /**
@@ -28,6 +29,8 @@ use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
  */
 class CommerceToolsSerializer implements SerializerInterface
 {
+    private const STAMP_HEADER_PREFIX = 'X-Message-Stamp-';
+
     /**
      * Decode message object or CommerceTools resource object when given message is not a message
      *
@@ -52,7 +55,9 @@ class CommerceToolsSerializer implements SerializerInterface
             throw new DecodeException(sprintf('Unable to decode unknown notification type `%s`.', $type));
         }
 
-        return new Envelope($message);
+        $stamps = $this->decodeStamps($encodedEnvelope);
+
+        return new Envelope($message, $stamps);
     }
 
     /**
@@ -67,9 +72,12 @@ class CommerceToolsSerializer implements SerializerInterface
         /** @var Message|Resource $message */
         $message = $envelope->getMessage();
 
-        $encodedEnvelope['headers'] = [
-            'X-CommerceTools-Message' => get_class($message)
-        ];
+        $encodedEnvelope['headers'] = array_merge(
+            [
+                'X-CommerceTools-Message' => get_class($message)
+            ],
+            $this->encodeStamps($envelope->withoutStampsOfType(NonSendableStampInterface::class))
+        );
 
         $encodedEnvelope['body'] = json_encode($message->toArray());
 
@@ -111,5 +119,52 @@ class CommerceToolsSerializer implements SerializerInterface
         }
 
         return new $class($body);
+    }
+
+    /**
+     * Decode all stamps
+     *
+     * @param array $encodedEnvelope
+     *
+     * @return array
+     */
+    private function decodeStamps(array $encodedEnvelope): array
+    {
+        $stamps = [];
+
+        foreach ($encodedEnvelope['headers'] as $name => $value) {
+            if (0 !== strpos($name, self::STAMP_HEADER_PREFIX)) {
+                continue;
+            }
+
+            $stamps[] = unserialize($value);
+        }
+
+        if ($stamps) {
+            $stamps = array_merge(...$stamps);
+        }
+
+        return $stamps;
+    }
+
+    /**
+     * Encode all stamps
+     *
+     * @param Envelope $envelope
+     *
+     * @return array
+     */
+    private function encodeStamps(Envelope $envelope): array
+    {
+        if (!$allStamps = $envelope->all()) {
+            return [];
+        }
+
+        $headers = [];
+        foreach ($allStamps as $class => $stamps) {
+            $headers[self::STAMP_HEADER_PREFIX . $class] = serialize($stamps);
+        }
+
+        return $headers;
     }
 }
