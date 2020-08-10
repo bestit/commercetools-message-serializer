@@ -14,6 +14,9 @@ use BestIt\Messenger\Model\CustomerUpdated;
 use BestIt\Messenger\Model\InventoryEntryCreated;
 use BestIt\Messenger\Model\InventoryEntryDeleted;
 use BestIt\Messenger\Model\InventoryEntryUpdated;
+use BestIt\Messenger\Model\OrderCreated;
+use BestIt\Messenger\Model\OrderDeleted;
+use BestIt\Messenger\Model\OrderUpdated;
 use BestIt\Messenger\Model\ProductCreated;
 use BestIt\Messenger\Model\ProductDeleted;
 use BestIt\Messenger\Model\ProductUpdated;
@@ -112,6 +115,7 @@ class CommerceToolsSerializer implements SerializerInterface
                 'inventory-entry' => InventoryEntryCreated::class,
                 'subscription' => SubscriptionCreated::class,
                 'shopping-list' => ShoppingListCreated::class,
+                'order' => OrderCreated::class,
             ],
             'ResourceUpdated' => [
                 'product' => ProductUpdated::class,
@@ -120,6 +124,7 @@ class CommerceToolsSerializer implements SerializerInterface
                 'inventory-entry' => InventoryEntryUpdated::class,
                 'subscription' => SubscriptionUpdated::class,
                 'shopping-list' => ShoppingListUpdated::class,
+                'order' => OrderUpdated::class,
             ],
             'ResourceDeleted' => [
                 'product' => ProductDeleted::class,
@@ -128,6 +133,7 @@ class CommerceToolsSerializer implements SerializerInterface
                 'inventory-entry' => InventoryEntryDeleted::class,
                 'subscription' => SubscriptionDeleted::class,
                 'shopping-list' => ShoppingListDeleted::class,
+                'order' => OrderDeleted::class
             ]
         ];
 
